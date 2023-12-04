@@ -11,7 +11,7 @@ Repository containing exploring effectiveness of log chromaticty space in color 
 - format: PNG
 - black level: $\approx 2048$
 - saturation level: $\le16384$
-- illumination:  $(r,g,b) \;\; \textit{s.t.} \;\; r+g+b = 1 $
+- illumination:  $(r,g,b) \quad \textit{s.t.} \quad r+g+b = 1$
 - other
     - The right bottom rectangle $175 \times 250$ is cropped out to remove SpyderCube color target
 
@@ -25,17 +25,18 @@ Repository containing exploring effectiveness of log chromaticty space in color 
 - saturation level:
 - illumination:  RGB in $12$-bit
 
-## CCCNN
-### notice
+## Experiment
+### CCCNN
+#### notice
 - It takes $32\times 32$ random patches from images, implementation here might be diffent from one in the paper.
 
-### GehlerShi
-#### notice
+#### GehlerShi
+##### notice
 - Cannot access [L. Shi and B. V. Funt. Re-processed version of the gehler color constancy database of 568 images](http://www.cs.sfu.ca/colour/data) which claimed to be $14$ bits, thus used [Shi's Re-processing of Gehler's Raw Dataset](https://www2.cs.sfu.ca/~colour/data/shi_gehler/#DATA) which is actually $12$ bits.
 
 
-### SimpleCube++
-- maximum $212$ patches
+#### SimpleCube++
+- (maximum $212$ patches)
 
 |        |  Log7 | Log5   | Linear5 |
 | ------ | ------ | ------ | ------ |
