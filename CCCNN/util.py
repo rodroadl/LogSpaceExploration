@@ -2,8 +2,7 @@
 util.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Oct 24th, 2023
-CS 7180: Advnaced Perception
+Last edited at: Dec 4th, 2023
 
 File containing utility functions
 
@@ -14,7 +13,7 @@ function:
     read_16bit_png - read 16bit png file using torch
     angularLoss - calculate accumulated angular loss in degrees
     illuminate - Linearize, illuminate, map to RGB and gamma correct
-    L2sRGB - Map linear chromaticity space to sRGB chromaticity space
+    lin2sRGB - Map linear chromaticity space to sRGB chromaticity space
     to_rgb - Map input to rgb chromaticity space
 
 class:
@@ -39,18 +38,19 @@ cam2rgb = np.array([
     -0.2198, 1.7153, -0.4955,
     0.0069, -0.5150, 1.5081,]).reshape((3, 3))
 
-def read_16bit_png(file):
+def read_16bit_png(path: str) -> torch.Tensor:
     '''
+    source: https://github.com/pytorch/vision/blob/0b41ff0b0a08229a10cfe1ca6987b4386d68bd9c/torchvision/io/image.py#L240
     Return 16 bit image
 
     Parameter:
-        file(str or Path) - 16bit image file
+        path(str or Path) - 16bit image file
 
     Return:
         16bit image
     '''
-    data = read_file(file)
-    return torch.ops.image.decode_png(data, 0, True)
+    data = read_file(path) # Reads and outputs the bytes contents of a file as a uint8 Tensor with one dimension.
+    return torch.ops.image.decode_png(data, 0, True) # 0 means unchanged image
 
 def angularLoss(xs, ys, singleton=False):
     '''
@@ -92,7 +92,7 @@ def illuminate(img, illum):
     rgb_img = np.clip(rgb_img, 0, 1)**(1/2.2)
     return (rgb_img*255).astype(np.uint8)
 
-def L2sRGB(linImg):
+def lin2sRGB(linImg):
     '''
     Map linear chromaticity space to sRGB chromaticity space
 
@@ -162,7 +162,7 @@ class ContrastNormalization:
     '''
     Apply Global Histogram Stretching to normalize contrast
     '''
-    def __init__(self, black_lvl=2048):
+    def __init__(self, black_lvl=0):
         '''
         Constructor
 
@@ -180,8 +180,9 @@ class ContrastNormalization:
         Return:
             output(tensor) - contrast normalized image in [0,1]
         '''
-        saturation_lvl = torch.max(img)
-        return torch.clamp((img - self.black_lvl)/(saturation_lvl - self.black_lvl),0,1)
+        # saturation_lvl = torch.max(img)
+        saturation_lvl = 2**12-1
+        return (img - self.black_lvl)/(saturation_lvl - self.black_lvl)
 
 class RandomPatches:
     '''

@@ -1,8 +1,12 @@
-SimpleCube++/
-Cube++/
+data/
+misc/
+
 pth/
 submission/
-output/ 
+output/
+ 
 submission.zip
 Project_2__Color_Constancy.pdf
-shi_gehler/
+
+REPORT.md
+TODO.md

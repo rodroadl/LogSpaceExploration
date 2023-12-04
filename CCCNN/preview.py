@@ -2,8 +2,7 @@
 preview.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Oct 20th, 2023
-CS 7180: Advnaced Perception
+Last edited at: Dec 4th, 2023
 
 script to preview images
 '''
@@ -17,7 +16,7 @@ import pandas as pd
 import torch
 
 
-from util import read_16bit_png, L2sRGB, ContrastNormalization, illuminate
+from util import read_16bit_png, lin2sRGB, ContrastNormalization, illuminate
 
 
 def main():
@@ -54,7 +53,7 @@ def main():
     # cv2.imwrite("linearized_PNG",linearized_img)
     # cv2.waitKey(0)
 
-    # sRGB_img = L2sRGB(linearized_img)
+    # sRGB_img = lin2sRGB(linearized_img)
     # cv2.imshow('sRGB img', sRGB_img)
     # cv2.waitKey(0)
     ### Bruce's visualization: x = 255 * x / 11.4
