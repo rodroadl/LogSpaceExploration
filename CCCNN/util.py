@@ -2,7 +2,7 @@
 util.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Dec 4th, 2023
+Last edited at: Dec 5th, 2023
 
 File containing utility functions
 
@@ -227,7 +227,9 @@ class RandomPatches:
         # populate candidate for center of patches
         for row in range(radius, h-radius):
             for col in range(radius, w-radius):
-                if (row < h-radius or col < w-radius): coords.add((row, col))
+                # why did I check? 
+                # if (row < h-radius or col < w-radius): coords.add((row, col)) 
+                coords.add((row, col))
                                                                                           
         # sample center for patches
         for _ in range(self.num_patches):
@@ -236,15 +238,16 @@ class RandomPatches:
                 y0, x0 = sample(coords, 1)[0]
                 coords.remove((y0, x0))
                 valid = True
+                # check if (y0, x0) overlaps with any previous selected patch(s)
                 for y, x in center:
                     if not valid: break # if overlap, try another one
-                    valid &= abs(y-y0) > diameter and abs(x-x0) > diameter # check whether it overlap with other patches
+                    valid &= (abs(y-y0) >= diameter or abs(x-x0) >= diameter) # check whether it overlap with other patches
             if valid: center.append((y0,x0)) # if it doesn't overlap, sample it
 
         # sample patches according to chosen centers
         patches = []
         for y,x in center:
-            patch = img[:, y-16:y+16, x-16:x+16].type(torch.float32)
+            patch = img[:, y-radius:y+radius, x-radius:x+radius].type(torch.float32)
             patches.append(patch)
 
         return torch.stack(patches, dim=0) # list of tensors -> sequence(tensor) of tensors
