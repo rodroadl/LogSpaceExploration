@@ -209,13 +209,13 @@ def main():
     model.eval()
 
     # configure datasets and dataloaders
-    eval_dataloader = DataLoader(dataset=eval_dataset, 
+    test_dataloader = DataLoader(dataset=test_dataset, 
                                 batch_size=1,
                                 num_workers=args.num_workers
                                 )
     
     losses = []
-    for  (batch, data) in zip(eval_dataloader, ref_dataset):
+    for  (batch, data) in zip(test_dataloader, ref_dataset):
         input, label, name = data
         inputs, labels = batch
         inputs = torch.flatten(inputs, start_dim=0, end_dim=1) #[batch size, num_patches, ...] -> [batch size * num_patches, ...] / NOTE: optimize?
