@@ -192,8 +192,9 @@ def main():
         ax2 = plt.subplot(122)
         ax2.plot(range(len(eval_loss_log)), eval_loss_log)
 
-    if not os.path.exists(pth_name): os.makedirs(os.path.join(args.outputs_dir, 'pth'))
-    pth_name = '/{}2{}_lr{}_{:.2f}.pth'.format(args.image_space[:3], args.label_space[:3],args.lr, best_loss)
+    pth_dir = os.path.join(args.outputs_dir, 'pth')
+    if not os.path.exists(pth_dir): os.makedirs(pth_dir)
+    pth_name = '{}2{}_lr{}_{:.2f}.pth'.format(args.image_space[:3], args.label_space[:3],args.lr, best_loss)
     print('best epoch: {}, angular loss: {:.2f}'.format(best_epoch, best_loss))
     torch.save(best_weights, os.path.join(args.outputs_dir, 'pth/{}'.format(pth_name)))
 
@@ -250,7 +251,8 @@ def main():
         pred_img = illuminate(input, mean_pred)
 
         # save the reconstructed image
-        if not os.path.exists(pth_name): os.makedirs(os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4])))
+        pred_dir = os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4]))
+        if not os.path.exists(pred_dir): os.makedirs(pred_dir)
         cv2.imwrite(os.path.join(args.outputs_dir,'{}/pred_{}.jpg'.format(pth_name[:-4], name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
 
     # calculate stats
