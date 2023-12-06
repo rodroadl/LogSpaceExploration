@@ -2,8 +2,7 @@
 eval.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Oct 25th, 2023
-CS 7180: Advnaced Perception
+Last edited at: Dec 5th, 2023
 
 Evaluate the CCCNN
 '''
@@ -27,17 +26,10 @@ def main():
     Driver function to test the network
     '''
     # initialize the argument parser
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--image-space', type=str, default='linear')
-    parser.add_argument('--label-space', type=str, default='linear')
-    parser.add_argument('--num-patches', type=int, required=True)
-    parser.add_argument('--weights-file', type=str, required=True)
-    parser.add_argument('--images-dir', type=str, required=True)
-    parser.add_argument('--labels-file', type=str, required=True)
-    parser.add_argument('--outputs-dir', type=str, required=True)
-    parser.add_argument('--num-workers', type=int, default=os.cpu_count())
-    args = parser.parse_args()
+    args = get_args()
+    evaluate(args)
 
+def evaluate(args):
     if not os.path.exists(args.outputs_dir): os.makedirs(args.outputs_dir)
 
     # set up device and initialize the network
@@ -112,6 +104,20 @@ def main():
     # draw histogram
     plt.hist(losses)
     plt.show()
+
+def get_args():
+    # initialize the argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--image-space', type=str, default='linear')
+    parser.add_argument('--label-space', type=str, default='linear')
+    parser.add_argument('--num-patches', type=int, required=True)
+    parser.add_argument('--weights-file', type=str, required=True)
+    parser.add_argument('--images-dir', type=str, required=True)
+    parser.add_argument('--labels-file', type=str, required=True)
+    parser.add_argument('--outputs-dir', type=str, required=True)
+    parser.add_argument('--num-workers', type=int, default=os.cpu_count())
+    args = parser.parse_args()
+    return args
 
 if __name__ == '__main__':
     main()

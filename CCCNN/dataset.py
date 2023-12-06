@@ -52,7 +52,7 @@ class CustomDataset(Dataset):
         '''
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
         # label = torch.tensor(self.labels.iloc[idx, 1:4].astype(float).values, dtype=torch.float32) # SimpleCube++
-        label = torch.tensor(self.labels.iloc[idx, :3].astype(float).values, dtype=torch.float32) # GehlerShi
+        label = torch.tensor(self.labels.iloc[idx, :].astype(float).values, dtype=torch.float32) # GehlerShi
 
         # find saturation level for expanded log space
         # if self.image_space == 'expandedLog' or self.label_space == 'expandedLog': expansion = 65535 # SimpleCube++
@@ -114,7 +114,7 @@ class ReferenceDataset(Dataset):
         name = self.images[idx]
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
         # label = torch.tensor(self.labels.iloc[idx, 1:4].astype(float).values, dtype=torch.float32) # SimpleCube++
-        label = torch.tensor(self.labels.iloc[idx, :3].astype(float).values, dtype=torch.float32) # GehlerShi
+        label = torch.tensor(self.labels.iloc[idx, :].astype(float).values, dtype=torch.float32) # GehlerShi
         
         return image, label, name
     
