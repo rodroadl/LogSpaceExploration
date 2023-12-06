@@ -85,9 +85,9 @@ def main():
     #                              )
 
     dataset = CustomDataset(args.images_dir, args.labels_file, num_patches=args.num_patches, image_space=args.image_space, label_space=args.label_space)
-    refset = ReferenceDataset(args.images_dir, args.labels_file, num_patches=args.num_patches, image_space=args.image_space, label_space=args.label_space)
+    refset = ReferenceDataset(args.images_dir, args.labels_file)
     fold1_dataset, fold2_dataset, test_dataset = random_split(dataset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
-    _, _, ref_dataset = random_split(dataset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
+    _, _, ref_dataset = random_split(refset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
 
     for train_dataset, eval_dataset in [(fold1_dataset, fold2_dataset), (fold2_dataset, fold1_dataset)]:
         # instantiate the SRCNN model, set up criterion and optimizer
