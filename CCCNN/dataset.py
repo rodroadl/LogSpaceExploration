@@ -33,12 +33,12 @@ class CustomDataset(Dataset):
         self.num_patches = num_patches
         self.image_space = image_space
         self.label_space = label_space
-        self.transform = transforms.Compose([
-                # MaxResize(1200), # SimpleCube++ has width of 648 and height of 432
-                MaxResize(1200),
-                ContrastNormalization(),
-                RandomPatches(patch_size = 32, num_patches = self.num_patches)
-                ])
+        # self.transform = transforms.Compose([
+        #         # MaxResize(1200), # SimpleCube++ has width of 648 and height of 432
+        #         MaxResize(1200),
+        #         ContrastNormalization(),
+        #         RandomPatches(patch_size = 32, num_patches = self.num_patches)
+        #         ])
     def __getitem__(self, idx):
         '''
         Return an images and labels for given index
@@ -60,7 +60,13 @@ class CustomDataset(Dataset):
         else: eps = 1e-7
 
         # transform
-        if self.transform: image = self.transform(image)
+        black_level = 129 if self.images[idx][:3] == "IMG" else 0
+        transform = transforms.Compose([
+            MaxResize(1200),
+            ContrastNormalization(black_level),
+            RandomPatches(patch_size = 32, num_patches = self.num_patches)
+        ])
+        if transform: image = transform(image)
 
         if self.image_space == 'log': # [0,1]->[-infty, 0)
             image = torch.log(image+eps)

@@ -104,7 +104,7 @@ def main():
                                     shuffle=True,
                                     num_workers=args.num_workers,
                                     pin_memory=True,
-                                    drop_last=True)
+                                    drop_last=True) # suffle=False 
         eval_dataloader = DataLoader(dataset=eval_dataset, 
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers
@@ -126,7 +126,7 @@ def main():
 
                 for batch in train_dataloader:
                     inputs, labels = batch
-                    inputs = torch.flatten(inputs, start_dim=0, end_dim=1) #[batch size, num_patches, ...] -> [batch size * num_patches, ...] / NOTE: optimize?
+                    inputs = torch.flatten(inputs, start_dim=0, end_dim=1) #[batch size, num_patches, 32, 32] -> [batch size * num_patches, 32, 32] / NOTE: optimize?
                     labels = torch.flatten(labels, start_dim=0, end_dim=1)
                     inputs = inputs.to(device)
                     labels = labels.to(device)

@@ -167,7 +167,7 @@ class ContrastNormalization:
         Constructor
 
         Parameter:
-            black_lvl(int, optional) - value of black orginall captured by camera
+            black_lvl(int, optional) - value of black orginally captured by camera
         '''
         self.black_lvl = black_lvl
     def __call__(self, img):
