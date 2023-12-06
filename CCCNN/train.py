@@ -264,6 +264,7 @@ def main():
     print("Min: {}\n10th per: {}\nMed: {}\nAvg: {}\n 90th per: {}\nMax: {}\n".format(minimum, tenth, median, average, ninetieth, maximum))
 
     # draw histogram
+    plt.figure()
     plt.hist(losses)
     plt.show()
 
