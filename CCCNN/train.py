@@ -209,7 +209,6 @@ def main():
     model.eval()
 
     # configure datasets and dataloaders
-    ref_dataset = ReferenceDataset(args.images_dir, args.labels_file)
     eval_dataloader = DataLoader(dataset=eval_dataset, 
                                 batch_size=1,
                                 num_workers=args.num_workers
