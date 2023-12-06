@@ -192,7 +192,7 @@ def main():
         ax2 = plt.subplot(122)
         ax2.plot(range(len(eval_loss_log)), eval_loss_log)
 
-    pth_name = os.path.join(args.outputs_dir, '{}2{}_lr{}_{:.2f}.pth'.format(args.image_space[:3], args.label_space[:3],args.lr, best_loss))
+    pth_name = os.path.join(args.outputs_dir, 'pth/{}2{}_lr{}_{:.2f}.pth'.format(args.image_space[:3], args.label_space[:3],args.lr, best_loss))
     print('best epoch: {}, angular loss: {:.2f}'.format(best_epoch, best_loss))
     torch.save(best_weights, pth_name)
 
@@ -249,7 +249,7 @@ def main():
         pred_img = illuminate(input, mean_pred)
 
         # save the reconstructed image
-        cv2.imwrite(os.path.join(args.outputs_dir,'pred_{}.jpg'.format(name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(os.path.join(args.outputs_dir,'{}/pred_{}.jpg'.format(pth_name[:-4], name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
 
     # calculate stats
     losses.sort()
