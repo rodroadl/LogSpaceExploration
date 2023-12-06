@@ -196,7 +196,8 @@ def main():
     if not os.path.exists(pth_dir): os.makedirs(pth_dir)
     pth_name = '{}2{}_lr{}_{:.2f}.pth'.format(args.image_space[:3], args.label_space[:3],args.lr, best_loss)
     print('best epoch: {}, angular loss: {:.2f}'.format(best_epoch, best_loss))
-    torch.save(best_weights, os.path.join(args.outputs_dir, 'pth/{}'.format(pth_name)))
+    pth_path = os.path.join(args.outputs_dir, 'pth/{}'.format(pth_name))
+    torch.save(best_weights, pth_path)
 
     ##############
     ###  TEST  ###
@@ -205,7 +206,7 @@ def main():
     state_dict = model.state_dict()
 
     # load the saved parameters
-    for n, p in torch.load(pth_name, map_location= lambda storage, loc: storage).items():
+    for n, p in torch.load(pth_path, map_location= lambda storage, loc: storage).items():
         if n in state_dict.keys(): state_dict[n].copy_(p)
         else: raise KeyError(n)
     model.eval()
@@ -253,7 +254,7 @@ def main():
         # save the reconstructed image
         pred_dir = os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4]))
         if not os.path.exists(pred_dir): os.makedirs(pred_dir)
-        cv2.imwrite(os.path.join(args.outputs_dir,'{}/pred_{}.jpg'.format(pth_name[:-4], name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(os.path.join(pred_dir,'pred_{}.jpg'.format(name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
 
     # calculate stats
     losses.sort()
