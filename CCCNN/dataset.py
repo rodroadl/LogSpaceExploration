@@ -2,12 +2,10 @@
 dataset.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Oct 25th, 2023
-CS 7180: Advnaced Perception
+Last edited at: Dec 5th, 2023
 
 Custom dataset
-Transform by Contrast Normalization - Global Histogram Stretching - 
-and Randomly sample 32 by 32 patches
+Transform by MaxResize - Contrast Normalization - Randomly sample 32 by 32 patches
 '''
 
 import os
@@ -37,6 +35,7 @@ class CustomDataset(Dataset):
         self.label_space = label_space
         self.transform = transforms.Compose([
                 # MaxResize(1200), # SimpleCube++ has width of 648 and height of 432
+                MaxResize(1200),
                 ContrastNormalization(),
                 RandomPatches(patch_size = 32, num_patches = self.num_patches)
                 ])
@@ -52,10 +51,12 @@ class CustomDataset(Dataset):
             label(sequence of tensors)
         '''
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
-        label = torch.tensor(self.labels.iloc[idx, 1:4].astype(float).values, dtype=torch.float32) 
+        # label = torch.tensor(self.labels.iloc[idx, 1:4].astype(float).values, dtype=torch.float32) # SimpleCube++
+        label = torch.tensor(self.labels.iloc[idx, :3].astype(float).values, dtype=torch.float32) # GehlerShi
 
         # find saturation level for expanded log space
-        if self.image_space == 'expandedLog' or self.label_space == 'expandedLog': expansion = 65535
+        # if self.image_space == 'expandedLog' or self.label_space == 'expandedLog': expansion = 65535 # SimpleCube++
+        if self.image_space == 'expandedLog' or self.label_space == 'expandedLog': expansion = 4095 # GehlerShi
         else: eps = 1e-7
 
         # transform
@@ -112,7 +113,8 @@ class ReferenceDataset(Dataset):
         '''
         name = self.images[idx]
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
-        label = torch.tensor(self.labels.iloc[idx, 1:4].astype(float).values, dtype=torch.float32)
+        # label = torch.tensor(self.labels.iloc[idx, 1:4].astype(float).values, dtype=torch.float32) # SimpleCube++
+        label = torch.tensor(self.labels.iloc[idx, :3].astype(float).values, dtype=torch.float32) # GehlerShi
         
         return image, label, name
     
