@@ -51,14 +51,14 @@ class CustomDataset(Dataset):
         black_level = 129 if self.images[idx][:3] == "IMG" else 0 # GehlerShi
         transform = transforms.Compose([
             MaxResize(1200),
-            ContrastNormalization(black_level),
+            ContrastNormalization(black_level=black_level),
             RandomPatches(patch_size = 32, num_patches = self.num_patches)
         ])
         image = transform(image)
 
-        if self.log_space: # GehlerShi: [0,1] -> (-inf, ~8.3]
+        if self.log_space: # GehlerShi: [0,1] -> [0, 4095] -> [0, ~8.3]
             image *= 4095 
-            image = torch.where(image < 1, torch.log(image), 0.) # NOTE: disconinuity at 1, how about image = torch.where(image < 1, torch.log(image), 0.)
+            image = torch.where(image < 0, torch.log(image), 0.) # NOTE: disconinuity at 1
 
         return image, torch.stack([label] * image.shape[0], dim=0)
     
