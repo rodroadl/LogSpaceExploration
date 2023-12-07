@@ -22,10 +22,12 @@ class:
     RandomPatches - randomly crop image to number of 32x32 patches
 '''
 # built-in
+import os
 import math 
 from random import sample
 
 # third-party
+import pandas as pd
 import numpy as np
 
 # torch
@@ -37,6 +39,14 @@ cam2rgb = np.array([
     1.8795, -1.0326, 0.1531,
     -0.2198, 1.7153, -0.4955,
     0.0069, -0.5150, 1.5081,]).reshape((3, 3))
+
+def split(images_dir, label_file):
+    images_list = os.listdir(images_dir)
+    labels = pd.read_csv(label_file)
+    assert len(images_list) == len(labels)
+
+
+    return
 
 def read_16bit_png(path: str) -> torch.Tensor:
     '''
@@ -162,7 +172,7 @@ class ContrastNormalization:
     '''
     Apply Global Histogram Stretching to normalize contrast
     '''
-    def __init__(self, black_lvl=0):
+    def __init__(self, black_lvl=0, saturation_lvl=2**12 - 1):
         '''
         Constructor
 
@@ -170,6 +180,7 @@ class ContrastNormalization:
             black_lvl(int, optional) - value of black orginally captured by camera
         '''
         self.black_lvl = black_lvl
+        self.saturation_lvl = saturation_lvl
     def __call__(self, img):
         '''
         Return contrast normalized image
@@ -181,8 +192,7 @@ class ContrastNormalization:
             output(tensor) - contrast normalized image in [0,1]
         '''
         # saturation_lvl = torch.max(img)
-        saturation_lvl = 2**12-1
-        return (img - self.black_lvl)/(saturation_lvl - self.black_lvl)
+        return (img - self.black_lvl)/(self.saturation_lvl - self.black_lvl)
 
 class RandomPatches:
     '''
