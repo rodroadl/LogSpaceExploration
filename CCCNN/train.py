@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader, random_split
 # custom
 from model import CCCNN
 from dataset import CustomDataset, ReferenceDataset
-from util import angularLoss, to_rgb, illuminate
+from util import angularLoss, to_rgb, illuminate, generate_threefold_indices
 
 def main():
     '''
@@ -64,10 +64,13 @@ def main():
         Seed:           {args.seed}
     ''')
 
-    dataset = CustomDataset(args.images_dir, args.labels_file, num_patches=args.num_patches, log_space=args.log_space)
-    refset = ReferenceDataset(args.images_dir, args.labels_file)
-    fold1_dataset, fold2_dataset, test_dataset = random_split(dataset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
-    _, _, ref_dataset = random_split(refset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
+    # split dataset for three-fold cross validation
+    fold1, fold2, fold_test = generate_threefold_indices(args.seed)
+
+    fold1_dataset = CustomDataset(args.images_dir, args.labels_file, fold1, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
+    fold2_dataset = CustomDataset(args.images_dir, args.labels_file, fold2, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
+    test_dataset = CustomDataset(args.images_dir, args.labels_file, fold_test, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
+    ref_dataset = ReferenceDataset(args.images_dir, args.labels_file, fold_test)
 
     for train_dataset, eval_dataset in [(fold1_dataset, fold2_dataset), (fold2_dataset, fold1_dataset)]:
         # instantiate the SRCNN model, set up criterion and optimizer

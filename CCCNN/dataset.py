@@ -17,7 +17,7 @@ from torchvision import transforms
 from util import read_16bit_png, ContrastNormalization, RandomPatches, MaxResize
 
 class CustomDataset(Dataset):
-    def __init__(self, data_dir, label_file, num_patches, log_space=False):
+    def __init__(self, data_dir, label_file, fold_indicies, num_patches, seed=123, log_space=False):
         '''
         constructor
 
@@ -30,8 +30,10 @@ class CustomDataset(Dataset):
         self.images_dir = Path(data_dir)
         self.labels = pd.read_csv(label_file)
         self.images = os.listdir(self.images_dir)
+        self.fold_indicies = fold_indicies
         self.num_patches = num_patches
         self.log_space = log_space
+        self.seed = seed
 
     def __getitem__(self, idx):
         '''
@@ -44,6 +46,7 @@ class CustomDataset(Dataset):
             image(sequence of tensors)
             label(sequence of tensors)
         '''
+        idx = self.fold_indicies[idx]
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
         label = torch.tensor(self.labels.iloc[idx, :].astype(float).values, dtype=torch.float32) # GehlerShi
 
@@ -52,7 +55,7 @@ class CustomDataset(Dataset):
         transform = transforms.Compose([
             MaxResize(1200),
             ContrastNormalization(black_lvl=black_lvl),
-            RandomPatches(patch_size = 32, num_patches = self.num_patches)
+            RandomPatches(patch_size = 32, num_patches = self.num_patches, seed=self.seed)
         ])
         image = transform(image)
 
@@ -69,10 +72,10 @@ class CustomDataset(Dataset):
         Return:
             length(int)
         '''
-        return len(self.images)
+        return len(self.fold_indicies)
 
 class ReferenceDataset(Dataset):
-    def __init__(self, data_dir, label_file):
+    def __init__(self, data_dir, label_file, fold_indicies):
         '''
         Constructor
 
@@ -83,6 +86,7 @@ class ReferenceDataset(Dataset):
         self.images_dir = Path(data_dir)
         self.labels = pd.read_csv(label_file)
         self.images = os.listdir(self.images_dir)
+        self.fold_indicies = fold_indicies
 
     def __getitem__(self, idx):
         '''
@@ -95,6 +99,7 @@ class ReferenceDataset(Dataset):
             image(tensor)
             label(tensos)
         '''
+        idx = self.fold_indicies[idx]
         name = self.images[idx]
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
         label = torch.tensor(self.labels.iloc[idx, :].astype(float).values, dtype=torch.float32) # GehlerShi
@@ -108,4 +113,4 @@ class ReferenceDataset(Dataset):
         Return:
             length(int)
         '''
-        return len(self.images)
+        return len(self.fold_indicies)

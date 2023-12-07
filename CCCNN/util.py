@@ -10,6 +10,7 @@ variable:
     cam2rgb - Global variable, transformation matrix for cam to RGB
 
 function:
+    split - evenly split data into three fold, train, evaluation, and test
     read_16bit_png - read 16bit png file using torch
     angularLoss - calculate accumulated angular loss in degrees
     illuminate - Linearize, illuminate, map to RGB and gamma correct
@@ -22,12 +23,10 @@ class:
     RandomPatches - randomly crop image to number of 32x32 patches
 '''
 # built-in
-import os
 import math 
-from random import sample
+import random 
 
 # third-party
-import pandas as pd
 import numpy as np
 
 # torch
@@ -40,13 +39,17 @@ cam2rgb = np.array([
     -0.2198, 1.7153, -0.4955,
     0.0069, -0.5150, 1.5081,]).reshape((3, 3))
 
-def split(images_dir, label_file):
-    images_list = os.listdir(images_dir)
-    labels = pd.read_csv(label_file)
-    assert len(images_list) == len(labels)
+def generate_threefold_indices(seed=123):
+    LENGTH = 568
+    indices = list(range(LENGTH))
+    first_third = LENGTH // 3
+    second_third = 2 * first_third
+    random.Random(seed).shuffle(indices)
+    fold1 = indices[:first_third]
+    fold2 = indices[first_third:second_third]
+    fold_test = indices[second_third:]
 
-
-    return
+    return fold1, fold2, fold_test
 
 def read_16bit_png(path: str) -> torch.Tensor:
     '''
@@ -198,7 +201,7 @@ class RandomPatches:
     '''
     Randomly crop image to number of 32x32 patches
     '''
-    def __init__(self, patch_size, num_patches):
+    def __init__(self, patch_size, num_patches, seed=123):
         '''
         Constructor
 
@@ -208,6 +211,7 @@ class RandomPatches:
         '''
         self.patch_size = patch_size
         self.num_patches = num_patches
+        self.seed = seed
 
     def __call__(self, img):
         '''
@@ -235,7 +239,7 @@ class RandomPatches:
         for _ in range(self.num_patches):
             valid = False
             while coords and not valid:
-                y0, x0 = sample(coords, 1)[0]
+                y0, x0 = random.Random(self.seed).sample(coords, 1)[0]
                 coords.remove((y0, x0))
                 valid = True
                 # check if (y0, x0) overlaps with any previous selected patch(s)
