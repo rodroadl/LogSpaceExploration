@@ -218,9 +218,6 @@ class RandomPatches:
         Return:
             sequences of 32x32 patches that was randomly cropped from image
         '''
-        # # specific to SimpleCube++
-        # MASK_HEIGHT = 250
-        # MASK_WIDTH = 175
 
         # assign and initiate variables
         _, h, w = img.size()        
@@ -229,16 +226,9 @@ class RandomPatches:
         coords = set()
         center = list()
 
-        # # populate candidate for center of patches
-        # for row in range(radius, h-radius):
-        #     for col in range(radius, w-radius):
-        #         if (row < h-radius-MASK_HEIGHT or col < w-radius-MASK_WIDTH): coords.add((row, col)) # check whether it overlap with masked rectangle
-
         # populate candidate for center of patches
-        for row in range(radius, h-radius):
-            for col in range(radius, w-radius):
-                # why did I check? 
-                # if (row < h-radius or col < w-radius): coords.add((row, col)) 
+        for row in range(radius, h-radius+1):
+            for col in range(radius, w-radius+1):
                 coords.add((row, col))
                                                                                           
         # sample center for patches
@@ -257,7 +247,7 @@ class RandomPatches:
         # sample patches according to chosen centers
         patches = []
         for y,x in center:
-            patch = img[:, y-radius:y+radius, x-radius:x+radius].type(torch.float32)
+            patch = img[:, y-radius:y+radius, x-radius:x+radius].detach().clone()
             patches.append(patch)
 
         return torch.stack(patches, dim=0) # list of tensors -> sequence(tensor) of tensors
