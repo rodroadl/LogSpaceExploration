@@ -46,14 +46,13 @@ def main():
 
     if not os.path.exists(args.outputs_dir): os.makedirs(args.outputs_dir)
 
-    # set up device
+    ### set up device
     cudnn.benchmark = True
     # cudnn.deterministic = True
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.manual_seed(args.seed)
     
-
-    # (Initialize logging)
+    ### (Initialize logging)
     print(f'''Starting training:
         Log Space:      {args.log_space}
         Epoch:          {args.num_epochs}
@@ -64,9 +63,8 @@ def main():
         Seed:           {args.seed}
     ''')
 
-    # split dataset for three-fold cross validation
+    ### split dataset for three-fold cross validation
     fold1, fold2, fold_test = generate_threefold_indices(args.seed)
-
     fold1_dataset = CustomDataset(args.images_dir, args.labels_file, fold1, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
     fold2_dataset = CustomDataset(args.images_dir, args.labels_file, fold2, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
     test_dataset = CustomDataset(args.images_dir, args.labels_file, fold_test, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
@@ -171,14 +169,14 @@ def main():
 
     state_dict = model.state_dict()
 
-    # load the saved parameters
+    ### load the saved parameters
     for n, p in torch.load(pth_path, map_location= lambda storage, loc: storage).items():
         if n in state_dict.keys(): state_dict[n].copy_(p)
         else: raise KeyError(n)
 
     model.eval()
 
-    # configure datasets and dataloaders
+    ### configure datasets and dataloaders
     test_dataloader = DataLoader(dataset=test_dataset, 
                                 batch_size=1,
                                 num_workers=args.num_workers
@@ -200,22 +198,22 @@ def main():
         if args.log_space:
             preds = torch.where(preds != 0, torch.exp(preds), 0.)
         
-        # map to rgb chromaticty space
+        ### map to rgb chromaticty space
         preds = to_rgb(preds)
 
         mean_pred = torch.mean(preds, dim=0)
         loss = angularLoss(mean_pred, label, singleton=True)
         losses.append(loss)
 
-        # reconstruct PNG to JPG with gt/pred illumination
+        ### reconstruct PNG to JPG with gt/pred illumination
         pred_img = illuminate(input, mean_pred)
 
-        # save the reconstructed image
+        ### save the reconstructed image
         pred_dir = os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4]))
         if not os.path.exists(pred_dir): os.makedirs(pred_dir)
         cv2.imwrite(os.path.join(pred_dir,'pred_{}.jpg'.format(name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
 
-    # calculate stats
+    ### calculate stats
     losses.sort()
     l = len(losses)
     minimum = min(losses)
@@ -227,7 +225,7 @@ def main():
 
     print("Min: {}\n10th per: {}\nMed: {}\nAvg: {}\n 90th per: {}\nMax: {}\n".format(minimum, tenth, median, average, ninetieth, maximum))
 
-    # draw histogram
+    ### draw histogram
     plt.figure()
     plt.hist(losses)
     plt.show()
