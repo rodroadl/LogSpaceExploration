@@ -32,7 +32,7 @@ def main():
     '''
     # setting up argumentparser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log-space', default=False, action=argparse.BooleanOptionalAction)
+    parser.add_argument('--log-space', default=False, action='store_true')
     parser.add_argument('--num-patches', type=int, required=True)
     parser.add_argument('--images-dir', type=str, required=True)
     parser.add_argument('--labels-file', type=str, required=True)
