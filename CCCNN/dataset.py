@@ -48,10 +48,10 @@ class CustomDataset(Dataset):
         label = torch.tensor(self.labels.iloc[idx, :].astype(float).values, dtype=torch.float32) # GehlerShi
 
         # transform
-        black_level = 129 if self.images[idx][:3] == "IMG" else 0 # GehlerShi
+        black_lvl = 129 if self.images[idx][:3] == "IMG" else 0 # GehlerShi
         transform = transforms.Compose([
             MaxResize(1200),
-            ContrastNormalization(black_level=black_level),
+            ContrastNormalization(black_lvl=black_lvl),
             RandomPatches(patch_size = 32, num_patches = self.num_patches)
         ])
         image = transform(image)
