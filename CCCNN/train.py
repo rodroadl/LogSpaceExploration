@@ -32,12 +32,8 @@ def main():
     '''
     # setting up argumentparser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log-space', default=True, action=argparse.BooleanOptionalAction)
+    parser.add_argument('--log-space', default=False, action=argparse.BooleanOptionalAction)
     parser.add_argument('--num-patches', type=int, required=True)
-    # parser.add_argument('--train-images-dir', type=str, required=True)
-    # parser.add_argument('--train-labels-file', type=str, required=True)
-    # parser.add_argument('--eval-images-dir', type=str, required=True)
-    # parser.add_argument('--eval-labels-file', type=str, required=True)
     parser.add_argument('--images-dir', type=str, required=True)
     parser.add_argument('--labels-file', type=str, required=True)
     parser.add_argument('--outputs-dir', type=str, required=True)
