@@ -32,8 +32,7 @@ def main():
     '''
     # setting up argumentparser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image-space', type=str, default='linear')
-    parser.add_argument('--label-space', type=str, default='linear')
+    parser.add_argument('--log-space', default=True, action=argparse.BooleanOptionalAction)
     parser.add_argument('--num-patches', type=int, required=True)
     # parser.add_argument('--train-images-dir', type=str, required=True)
     # parser.add_argument('--train-labels-file', type=str, required=True)
@@ -43,8 +42,8 @@ def main():
     parser.add_argument('--labels-file', type=str, required=True)
     parser.add_argument('--outputs-dir', type=str, required=True)
     parser.add_argument('--lr', type=float, default=1e-4)
-    parser.add_argument('--batch-size', type=int, default=256)
-    parser.add_argument('--num-epochs', type=int, default=2)
+    parser.add_argument('--batch-size', type=int, default=32)
+    parser.add_argument('--num-epochs', type=int, default=20)
     parser.add_argument('--num-workers', type=int, default=os.cpu_count())
     parser.add_argument('--seed', type=int, default=123)
     args = parser.parse_args()
@@ -60,8 +59,7 @@ def main():
 
     # (Initialize logging)
     print(f'''Starting training:
-        Image Space:    {args.image_space}
-        Label Space:    {args.label_space}
+        Log Space:      {args.log_space}
         Epoch:          {args.num_epochs}
         Batch size:     {args.batch_size}
         Num workers:    {args.num_workers}
@@ -70,21 +68,7 @@ def main():
         Seed:           {args.seed}
     ''')
 
-    # configure datasets and dataloaders
-    # train_dataset = CustomDataset(args.train_images_dir, args.train_labels_file, num_patches=args.num_patches, image_space=args.image_space, label_space=args.label_space)
-    # eval_dataset = CustomDataset(args.eval_images_dir, args.eval_labels_file, num_patches=args.num_patches, image_space=args.image_space, label_space=args.label_space)
-    # train_dataloader = DataLoader(dataset=train_dataset,
-    #                               batch_size=args.batch_size,
-    #                               shuffle=True,
-    #                               num_workers=args.num_workers,
-    #                               pin_memory=True,
-    #                               drop_last=True)
-    # eval_dataloader = DataLoader(dataset=eval_dataset, 
-    #                              batch_size=args.batch_size,
-    #                              num_workers=args.num_workers
-    #                              )
-
-    dataset = CustomDataset(args.images_dir, args.labels_file, num_patches=args.num_patches, image_space=args.image_space, label_space=args.label_space)
+    dataset = CustomDataset(args.images_dir, args.labels_file, num_patches=args.num_patches, log_space=args.log_space)
     refset = ReferenceDataset(args.images_dir, args.labels_file)
     fold1_dataset, fold2_dataset, test_dataset = random_split(dataset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
     _, _, ref_dataset = random_split(refset, [.333, .333, .334], generator=torch.Generator().manual_seed(args.seed))
@@ -104,7 +88,7 @@ def main():
                                     shuffle=True,
                                     num_workers=args.num_workers,
                                     pin_memory=True,
-                                    drop_last=True) # suffle=False 
+                                    drop_last=True)
         eval_dataloader = DataLoader(dataset=eval_dataset, 
                                     batch_size=args.batch_size,
                                     num_workers=args.num_workers
@@ -117,7 +101,6 @@ def main():
         eval_loss_log = list()
 
         # start the training
-        
         for epoch in range(args.num_epochs):
             model.train()
 
@@ -131,15 +114,6 @@ def main():
                     inputs = inputs.to(device)
                     labels = labels.to(device)
                     preds = model(inputs)
-
-                    if args.label_space == "expandedLog":
-                        # [0, ~11.3] -> [0, 65535]
-                        preds = torch.where(preds != 0, torch.exp(preds), 0)
-                        labels = torch.where(labels != 0, torch.exp(labels), 0) 
-
-                        # [0, 65535] -> [0, 1] s.t. r+g+b = 1
-                        preds = to_rgb(preds)
-                        labels = to_rgb(labels) 
 
                     loss = criterion(preds,labels)
                     train_loss_log.append(loss.item())
@@ -164,18 +138,10 @@ def main():
 
                     with torch.no_grad(): preds = model(inputs)
 
-                    if args.label_space == "expandedLog":
-                        # [0, ~11.3] -> [0, 65535]
-                        preds = torch.where(preds != 0, torch.exp(preds), 0)
-                        labels = torch.where(labels != 0, torch.exp(labels), 0) 
-
-                        # [0, 65535] -> [0, 1] s.t. r+g+b = 1
-                        preds = to_rgb(preds)
-                        labels = to_rgb(labels) 
-
                     batch_loss = angularLoss(preds, labels)
                     round_loss += batch_loss
                     eval_pbar.update(args.batch_size)
+
                 round_loss /= num_patches
                 eval_loss_log.append(round_loss)
                 print('eval round loss: {:.2f}'.format(round_loss))
@@ -209,6 +175,7 @@ def main():
     for n, p in torch.load(pth_path, map_location= lambda storage, loc: storage).items():
         if n in state_dict.keys(): state_dict[n].copy_(p)
         else: raise KeyError(n)
+
     model.eval()
 
     # configure datasets and dataloaders
@@ -230,21 +197,13 @@ def main():
 
         with torch.no_grad(): preds = model(inputs)
 
-        if args.label_space == "log": # [-infty, 0)
-            eps = 1e-7
-            preds = torch.exp(label-eps)
-            if torch.isnan(preds).any():
-                print("nan in preds")
-                raise SystemExit
-        elif args.label_space == "expandedLog":
+        if args.log_space:
             preds = torch.where(preds != 0, torch.exp(preds), 0.)
         
         # map to rgb chromaticty space
         preds = to_rgb(preds)
 
         mean_pred = torch.mean(preds, dim=0)
-        # print("mean_pred:", mean_pred)
-        # print("label:", label)
         loss = angularLoss(mean_pred, label, singleton=True)
         losses.append(loss)
 
