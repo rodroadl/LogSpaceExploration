@@ -57,14 +57,8 @@ class CustomDataset(Dataset):
         image = transform(image)
 
         if self.log_space: # GehlerShi: [0,1] -> [0, 4095] -> [0, ~8.3]
-            print("before expansion")
-            print(image)
             image *= 4095 
-            print("after expansion")
-            print(image)
-            image = torch.where(image < 1, torch.log(image), 0.) # NOTE: disconinuity at 1
-            print("before log")
-            print(image)
+            image = torch.where(image > 1, torch.log(image), 0.) # NOTE: disconinuity at 1
 
         return image, torch.stack([label] * image.shape[0], dim=0)
     
