@@ -58,7 +58,7 @@ class CustomDataset(Dataset):
 
         if self.log_space: # GehlerShi: [0,1] -> (-inf, ~8.3]
             image *= 4095 
-            image = torch.where(image != 0, torch.log(image), 0.) # NOTE: disconinuity at 1, how about image = torch.where(image < 1, torch.log(image), 0.)
+            image = torch.where(image < 1, torch.log(image), 0.) # NOTE: disconinuity at 1, how about image = torch.where(image < 1, torch.log(image), 0.)
 
         return image, torch.stack([label] * image.shape[0], dim=0)
     
