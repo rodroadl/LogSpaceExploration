@@ -156,7 +156,8 @@ def main():
 
     pth_dir = os.path.join(args.outputs_dir, 'pth')
     if not os.path.exists(pth_dir): os.makedirs(pth_dir)
-    pth_name = '{}2{}_lr{}_{:.2f}.pth'.format(args.image_space[:3], args.label_space[:3],args.lr, best_loss)
+    image_space = 'log' if args.log_space else 'lin'
+    pth_name = '{}_lr{}_{:.2f}.pth'.format(image_space, args.lr, best_loss)
     print('best epoch: {}, angular loss: {:.2f}'.format(best_epoch, best_loss))
     pth_path = os.path.join(args.outputs_dir, 'pth/{}'.format(pth_name))
     torch.save(best_weights, pth_path)
