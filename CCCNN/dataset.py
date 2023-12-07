@@ -2,7 +2,7 @@
 dataset.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Dec 5th, 2023
+Last edited at: Dec 6th, 2023
 
 Custom dataset
 Transform by MaxResize - Contrast Normalization - Randomly sample 32 by 32 patches
@@ -25,7 +25,7 @@ class CustomDataset(Dataset):
             data_dir(str or Path) - path for directory containing images
             lable_file(str or Path) - path for label file
             num_patches(int) - Number of patches that gets to pass into RandomPatches
-            log_space(bool, optional) - Flag whether to map chromaticity space to log chromaticity space
+            image_space(str in ['linear', 'expandedLog'], optional) - Flag indicating which chromaticity space to map
         '''
         self.images_dir = Path(data_dir)
         self.labels = pd.read_csv(label_file)
@@ -60,27 +60,27 @@ class CustomDataset(Dataset):
         else: eps = 1e-7
 
         # transform
-        black_level = 129 if self.images[idx][:3] == "IMG" else 0
+        black_level = 129 if self.images[idx][:3] == "IMG" else 0 # GehlerShi
         transform = transforms.Compose([
             MaxResize(1200),
             ContrastNormalization(black_level),
             RandomPatches(patch_size = 32, num_patches = self.num_patches)
         ])
-        if transform: image = transform(image)
+        image = transform(image)
 
-        if self.image_space == 'log': # [0,1]->[-infty, 0)
+        if self.image_space == 'log': # [0,1] -> [-infty, 0)
             image = torch.log(image+eps)
-        elif self.image_space == 'expandedLog': # [0,1]->[0, ~11.3]
+        elif self.image_space == 'expandedLog': # GehlerShi: [0,1] -> [0, ~8.3] / SimpleCube++: -> [0, ~11.3]
             image *= expansion 
             image = torch.where(image != 0, torch.log(image), 0.)
 
 
-        if self.label_space == 'log': # ->[-infty, 0)
-            label = torch.log(label+eps)
-        elif self.label_space == 'expandedLog': # ->[0, ~9.7]
-            label *= expansion
-            label = torch.where(label != 0, torch.log(label), 0.)
-            label = torch.clamp(label, 0., expansion)
+        # if self.label_space == 'log': # ->[-infty, 0)
+        #     label = torch.log(label+eps)
+        # elif self.label_space == 'expandedLog': # ->[0, ~9.7]
+        #     label *= expansion
+        #     label = torch.where(label != 0, torch.log(label), 0.)
+        #     label = torch.clamp(label, 0., expansion)
 
         return image, torch.stack([label] * image.shape[0], dim=0)
     
