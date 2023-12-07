@@ -2,7 +2,7 @@
 dataset.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Dec 6th, 2023
+Last edited at: Dec 7th, 2023
 
 Custom dataset
 Transform by MaxResize - Contrast Normalization - Randomly sample 32 by 32 patches
@@ -56,9 +56,9 @@ class CustomDataset(Dataset):
         ])
         image = transform(image)
 
-        if self.log_space: # GehlerShi: [0,1] -> [0, ~8.3] / SimpleCube++: -> [0, ~11.3]
+        if self.log_space: # GehlerShi: [0,1] -> (-inf, ~8.3]
             image *= 4095 
-            image = torch.where(image != 0, torch.log(image), 0.)
+            image = torch.where(image != 0, torch.log(image), 0.) # NOTE: disconinuity at 1, how about image = torch.where(image < 1, torch.log(image), 0.)
 
         return image, torch.stack([label] * image.shape[0], dim=0)
     
