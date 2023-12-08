@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader, random_split
 # custom
 from model import CCCNN
 from dataset import CustomDataset, ReferenceDataset
-from util import angularLoss, to_rgb, illuminate, generate_threefold_indices
+from util import angularLoss, illuminate, generate_threefold_indices
 
 def main():
     '''
@@ -101,7 +101,7 @@ def main():
         for epoch in range(args.num_epochs):
             model.train()
 
-            with tqdm(total=(len(train_dataset)- len(train_dataset)% args.batch_size)) as train_pbar:
+            with tqdm(total=(len(train_dataset) - len(train_dataset)%args.batch_size)) as train_pbar:
                 train_pbar.set_description('train epoch: {}/{}'.format(epoch, args.num_epochs - 1))
 
                 for batch in train_dataloader:
@@ -120,7 +120,7 @@ def main():
                     train_pbar.update(args.batch_size)
 
             with tqdm(total=(len(eval_dataset))) as eval_pbar:
-                eval_pbar.set_description('eval round:')
+                eval_pbar.set_description('eval round:{}/{}'.format(epoch, args.num_epochs - 1))
                 # start the evaluation
                 model.eval()
                 round_loss = 0
@@ -167,6 +167,9 @@ def main():
     ###  TEST  ###
     ##############
 
+    pred_dir = os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4]))
+    if not os.path.exists(pred_dir): os.makedirs(pred_dir)
+
     state_dict = model.state_dict()
 
     ### load the saved parameters
@@ -181,37 +184,41 @@ def main():
                                 batch_size=1,
                                 num_workers=args.num_workers
                                 )
+    ref_dataloader = DataLoader(dataset=ref_dataset, 
+                                batch_size=1,
+                                num_workers=args.num_workers
+                                )
     
     losses = []
-    for  (batch, data) in zip(test_dataloader, ref_dataset):
-        input, label, name = data
-        inputs, labels = batch
-        inputs = torch.flatten(inputs, start_dim=0, end_dim=1) #[batch size, num_patches, ...] -> [batch size * num_patches, ...] / NOTE: optimize?
-        labels = torch.flatten(labels, start_dim=0, end_dim=1)
-        inputs = inputs.to(device)
-        labels = labels.to(device)
-        input = input.to(device)
-        label = label.to(device)
+    with tqdm(total=(len(ref_dataset))) as test_pbar:
+        test_pbar.set_description('test progression:')
 
-        with torch.no_grad(): preds = model(inputs)
+        for  (test_batch, ref_batch) in zip(test_dataloader, ref_dataloader):
+            input, label, name = ref_batch
+            inputs, labels = test_batch
+            inputs = torch.flatten(inputs, start_dim=0, end_dim=1) #[batch size, num_patches, ...] -> [batch size * num_patches, ...] / NOTE: optimize?
+            labels = torch.flatten(labels, start_dim=0, end_dim=1)
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            input = input.to(device)
+            label = label.to(device)
 
-        if args.log_space:
-            preds = torch.where(preds != 0, torch.exp(preds), 0.)
-        
-        ### map to rgb chromaticty space
-        preds = to_rgb(preds)
+            print(input.shape)
+            print(label)
 
-        mean_pred = torch.mean(preds, dim=0)
-        loss = angularLoss(mean_pred, label, singleton=True)
-        losses.append(loss)
+            with torch.no_grad(): preds = model(inputs)
+            
+            ### map to rgb chromaticty space
+            mean_pred = torch.mean(preds, dim=0)
+            loss = angularLoss(mean_pred, label, singleton=True)
+            losses.append(loss)
 
-        ### reconstruct PNG to JPG with gt/pred illumination
-        pred_img = illuminate(input, mean_pred)
-
-        ### save the reconstructed image
-        pred_dir = os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4]))
-        if not os.path.exists(pred_dir): os.makedirs(pred_dir)
-        cv2.imwrite(os.path.join(pred_dir,'pred_{}.jpg'.format(name)), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
+            ### reconstruct PNG to JPG with gt/pred illumination
+            black_lvl = 129 if name[:3] == "IMG" else 0 # GehlerShi
+            pred_img = illuminate(input, mean_pred, black_lvl)
+            
+            ### save the reconstructed image
+            cv2.imwrite(os.path.join(pred_dir,'pred_{}.jpg'.format(name[:-4])), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
 
     ### calculate stats
     losses.sort()
