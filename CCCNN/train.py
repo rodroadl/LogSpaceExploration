@@ -2,7 +2,7 @@
 train.py
 
 Last edited by: GunGyeom James Kim
-Last edited at: Dec 5th, 2023
+Last edited at: Dec 7th, 2023
 
 code for training the network
 '''
@@ -13,6 +13,7 @@ import copy
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
+import time
 
 # torch 
 import torch
@@ -67,13 +68,17 @@ def main():
     fold1, fold2, fold_test = generate_threefold_indices(args.seed)
     fold1_dataset = CustomDataset(args.images_dir, args.labels_file, fold1, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
     fold2_dataset = CustomDataset(args.images_dir, args.labels_file, fold2, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
-    test_dataset = CustomDataset(args.images_dir, args.labels_file, fold_test, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
-    ref_dataset = ReferenceDataset(args.images_dir, args.labels_file, fold_test)
-
+    
+    fold_file = open(os.path.join(args.outputs_dir,"{}.txt".format(str(int(time.time())))), "w")
+    fold_file.write(",".join(map(str, fold1))+"\n")
+    fold_file.write(",".join(map(str, fold1))+"\n")
+    fold_file.write(",".join(map(str, fold_test)))
+    fold_file.close()
+    
     for train_dataset, eval_dataset in [(fold1_dataset, fold2_dataset), (fold2_dataset, fold1_dataset)]:
         # instantiate the SRCNN model, set up criterion and optimizer
         model = CCCNN().to(device)
-        criterion = nn.MSELoss(reduction="sum") # NOTE: check, euclidean loss?
+        criterion = nn.MSELoss(reduction="mean") # NOTE: check, euclidean loss?, reduction: 'none'|'mean'|'sum'
         optimizer = optim.Adam([
             {'params': model.conv.parameters()},
             {'params': model.fc1.parameters()},
@@ -162,79 +167,6 @@ def main():
     print('best epoch: {}, angular loss: {:.2f}'.format(best_epoch, best_loss))
     pth_path = os.path.join(args.outputs_dir, 'pth/{}'.format(pth_name))
     torch.save(best_weights, pth_path)
-
-    ##############
-    ###  TEST  ###
-    ##############
-
-    pred_dir = os.path.join(args.outputs_dir, '{}'.format(pth_name[:-4]))
-    if not os.path.exists(pred_dir): os.makedirs(pred_dir)
-
-    state_dict = model.state_dict()
-
-    ### load the saved parameters
-    for n, p in torch.load(pth_path, map_location= lambda storage, loc: storage).items():
-        if n in state_dict.keys(): state_dict[n].copy_(p)
-        else: raise KeyError(n)
-
-    model.eval()
-
-    ### configure datasets and dataloaders
-    test_dataloader = DataLoader(dataset=test_dataset, 
-                                batch_size=1,
-                                num_workers=args.num_workers
-                                )
-    ref_dataloader = DataLoader(dataset=ref_dataset, 
-                                batch_size=1,
-                                num_workers=args.num_workers
-                                )
-    
-    losses = []
-    with tqdm(total=(len(ref_dataset))) as test_pbar:
-        test_pbar.set_description('test progression:')
-
-        for  (test_batch, ref_batch) in zip(test_dataloader, ref_dataloader):
-            input, label, name = ref_batch
-            inputs, labels = test_batch
-            inputs = torch.flatten(inputs, start_dim=0, end_dim=1) #[batch size, num_patches, ...] -> [batch size * num_patches, ...] / NOTE: optimize?
-            labels = torch.flatten(labels, start_dim=0, end_dim=1)
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            input = input.to(device)
-            label = label.to(device)
-
-            print(input.shape)
-            print(label)
-
-            with torch.no_grad(): preds = model(inputs)
-            
-            ### map to rgb chromaticty space
-            mean_pred = torch.mean(preds, dim=0)
-            loss = angularLoss(mean_pred, label, singleton=True)
-            losses.append(loss)
-
-            ### reconstruct PNG to JPG with gt/pred illumination
-            black_lvl = 129 if name[:3] == "IMG" else 0 # GehlerShi
-            pred_img = illuminate(input, mean_pred, black_lvl)
-            
-            ### save the reconstructed image
-            cv2.imwrite(os.path.join(pred_dir,'pred_{}.jpg'.format(name[:-4])), cv2.cvtColor(pred_img, cv2.COLOR_RGB2BGR))
-
-    ### calculate stats
-    losses.sort()
-    l = len(losses)
-    minimum = min(losses)
-    tenth = losses[l//10]
-    median = losses[l//2]
-    average = sum(losses) / l
-    ninetieth = losses[l * 9 // 10]
-    maximum = max(losses)
-
-    print("Min: {}\n10th per: {}\nMed: {}\nAvg: {}\n 90th per: {}\nMax: {}\n".format(minimum, tenth, median, average, ninetieth, maximum))
-
-    ### draw histogram
-    plt.figure()
-    plt.hist(losses)
     plt.show()
 
 if __name__ == "__main__":
