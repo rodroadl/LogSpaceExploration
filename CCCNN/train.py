@@ -71,7 +71,7 @@ def main():
     
     fold_file = open(os.path.join(args.outputs_dir,"{}.txt".format(str(int(time.time())))), "w")
     fold_file.write(",".join(map(str, fold1))+"\n")
-    fold_file.write(",".join(map(str, fold1))+"\n")
+    fold_file.write(",".join(map(str, fold2))+"\n")
     fold_file.write(",".join(map(str, fold_test)))
     fold_file.close()
     
