@@ -10,7 +10,7 @@ import os
 import argparse
 import cv2
 import matplotlib.pyplot as plt
-import tqdm
+from tqdm import tqdm
 
 # torch
 import torch
@@ -28,7 +28,7 @@ def main():
     '''
     ## initialize the argument parser
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log-space', default=False, action='stroe_true')
+    parser.add_argument('--log-space', default=False, action='store_true')
     parser.add_argument('--num-patches', type=int, required=True)
     parser.add_argument('--fold-file', type=str, required=True)
     parser.add_argument('--weights-file', type=str, required=True)
@@ -36,37 +36,40 @@ def main():
     parser.add_argument('--labels-file', type=str, required=True)
     parser.add_argument('--outputs-dir', type=str, required=True)
     parser.add_argument('--num-workers', type=int, default=os.cpu_count())
+    parser.add_argument('--seed', type=int, default=123)
     args = parser.parse_args()
 
-    ## set up device and initialize the network
-    cudnn.benchmark = True
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = CCCNN().to(device)
     pred_dir = os.path.join(args.outputs_dir, '{}'.format(args.weights_file[:-4]))
-
     if not os.path.exists(pred_dir): os.makedirs(pred_dir)
-
-    state_dict = model.state_dict()
 
     pth_path = os.path.join(args.outputs_dir, "pth/{}".format(args.weights_file))
     _, _, fold_test = open(args.fold_file, "r")
     fold_test = list(map(int, fold_test.split(",")))
 
+    ## set up device and initialize the network
+    cudnn.benchmark = True
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = CCCNN().to(device)
+    torch.manual_seed(args.seed)
+
+    state_dict = model.state_dict()
     ## load the saved parameters
     for n, p in torch.load(pth_path, map_location= lambda storage, loc: storage).items():
         if n in state_dict.keys(): state_dict[n].copy_(p)
         else: raise KeyError(n)
 
-    model.eval()
+    
 
     ## configure datasets and dataloaders
     test_dataset = CustomDataset(args.images_dir, args.labels_file, fold_test, num_patches=args.num_patches, log_space=args.log_space, seed=args.seed)
     ref_dataset = ReferenceDataset(args.images_dir, args.labels_file, fold_test)
     test_dataloader = DataLoader(dataset=test_dataset, 
                                 batch_size=1,
-                                num_workers=args.num_workers
+                                num_workers=args.num_workers,
+                                persistent_workers= True
                                 )
     
+    model.eval()
     losses = []
     with tqdm(total=(len(ref_dataset))) as test_pbar:
         test_pbar.set_description('test progression:')

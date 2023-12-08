@@ -9,6 +9,7 @@ Transform by MaxResize - Contrast Normalization - Randomly sample 32 by 32 patch
 '''
 
 import os
+import pickle
 import torch
 import pandas as pd
 from pathlib import Path
@@ -104,7 +105,7 @@ class ReferenceDataset(Dataset):
         image = read_16bit_png(os.path.join(self.images_dir,self.images[idx]))
         label = torch.tensor(self.labels.iloc[idx, :].astype(float).values, dtype=torch.float32) # GehlerShi
         
-        return image, label, name
+        return image, label, pickle.dumps(name)
     
     def __len__(self):
         '''
