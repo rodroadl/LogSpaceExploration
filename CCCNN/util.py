@@ -48,7 +48,6 @@ def generate_threefold_indices(seed=123):
     fold1 = indices[:first_third]
     fold2 = indices[first_third:second_third]
     fold_test = indices[second_third:]
-
     return fold1, fold2, fold_test
 
 def read_16bit_png(path: str) -> torch.Tensor:
@@ -86,7 +85,7 @@ def angularLoss(xs, ys, singleton=False):
         else: output += torch.rad2deg(torch.arccos(torch.nn.functional.cosine_similarity(x,y, dim=0))).item()
     return output
 
-def illuminate(img, illum):
+def illuminate(img, illum, black_lvl):
     '''
     Linearize, illuminate, map to RGB and gamma correct
 
@@ -97,9 +96,10 @@ def illuminate(img, illum):
     Return:
         output(numpy.ndarray) - 
     '''
-    linearize = ContrastNormalization()
+    linearize = ContrastNormalization(black_lvl = black_lvl)
     linearized_img = linearize(img).permute(1,2,0).cpu().numpy() # h,w,c -> c,h,w
     illum = illum.cpu().numpy()
+    illum /= illum.sum()
     white_balanced_image = linearized_img/illum
     rgb_img = np.dot(white_balanced_image, cam2rgb.T)
     rgb_img = np.clip(rgb_img, 0, 1)**(1/2.2)
